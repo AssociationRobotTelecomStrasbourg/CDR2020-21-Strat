@@ -93,10 +93,12 @@ void setup() {
   Vbat_raw = analogRead(VBATT);
   Vbat = (map(Vbat_raw,0,1023,0,3.3)*4.0)*1.044; //1.044 : facteur de calibration
 
-  Serial.println(Vbat_raw, DEC);
-  Serial.print("Tension batterie : ");
-  Serial.print(Vbat);
-  Serial.println(" V");
+  #ifdef debug
+    Serial.println(Vbat_raw, DEC);
+    Serial.print("Tension batterie : ");
+    Serial.print(Vbat);
+    Serial.println(" V");
+  #endif 
   SerialIHM.write(Vbat_raw>>8);
   SerialIHM.write(Vbat_raw & 0x00FF);
   digitalWrite(13,HIGH);
@@ -151,10 +153,11 @@ void setup() {
 
   SerialLidar.begin(9600);
 
-
-  Serial.print("Valeur GoSensor: ");
-  Serial.println(digitalRead(GO_SENSOR));
-
+  #ifdef debug
+    Serial.print("Valeur GoSensor: ");
+    Serial.println(digitalRead(GO_SENSOR));
+  #endif
+  
   digitalWrite(LED1, LOW);
   digitalWrite(LED2, LOW);
 
