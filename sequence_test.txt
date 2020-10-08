@@ -1,0 +1,36 @@
+Description des tests du côté de la teensy stratégie
+
+-Setup
+    -Initialisation UART USB
+
+    -Test des LEDs de debug : 0; 1(500ms);0(500ms); 1(500ms);0
+        avec échange des 2 leds
+
+    -Initialisation senseur batterie
+    -Envoi de la valeur sur UART USB
+
+    -Initialisation ReflecSensor
+    -Lecture et envoi de la valeur sur USB
+
+    -Initialisation des xshut
+    -Mise en veille de tous les VL52L0X
+    -Lecture successive des valeurs 
+
+    -Initialisation PWM_LIDAR
+    -Ecriture sur PWM_LIDAR : 255 ; 125; 0; 125
+
+    -Initialisation UART vers mouvement
+    -Ecriture "0x7E 0x31 0x56"
+
+-Loop
+    -Attente message sur UART stratégie
+        -> "0x7E 0x45 0x23"
+    -Attente message sur debug
+    -Attente message sur IHM
+    -Attente message sur LIDAR
+    
+[TODO]
+-Test IHM
+-Test debug
+-Test UART LIDAR
+
