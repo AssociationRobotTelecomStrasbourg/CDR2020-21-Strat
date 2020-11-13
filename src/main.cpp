@@ -8,6 +8,9 @@ Code de test de la carte-mère du robot pour la CDR2020
 #include "VL53L0X.h"
 #include "VL53Network.h"
 
+#include "commFrame.h"
+#include "commKeywords.h"
+#include "commMvt.h"
 #define _debug
 
 //variable gestion IHM-STRAT
@@ -23,6 +26,9 @@ uint8_t N_ok_reseau;
 #define BATT_RATIO 3 //Rapport pont diviseur de tension du senseur batterie
 float Vbat = 0;
 uint16_t Vbat_raw;
+
+
+commFrame movt(FRAMESTARTER);
 
 void setup() {
   // put your setup code here, to run once:
@@ -223,19 +229,8 @@ void loop() {
       Serial.println("LOOP!");
       delay(250);
   #endif
-  /* //Test mesures lidar
-  delay(500);
-  uint16_t* measures = reseauLidar.readRangeContinuousMillimeters();
-  Serial.print("Mesures lidars: ");
-  Serial.print(measures[0]);
-  Serial.print("|");
-  Serial.print(measures[1]);
-  Serial.print("|");
-  Serial.print(measures[2]);
-  Serial.print("|");
-  Serial.print(measures[3]);
-  Serial.println("|"); 
-  */
+  
+
 
 
  
