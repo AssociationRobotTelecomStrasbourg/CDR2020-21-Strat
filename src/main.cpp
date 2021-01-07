@@ -264,7 +264,14 @@ void loop() {
     
 
     //Lecture des capteurs
-
+      //LIDARs fixes
+      //LIDARs mobiles
+      //position, via movt
+        //requestCoords
+        //Serial.read
+          //if reponse :: OK -> attente de lecture
+          //if reponse :: ERR -> renvoi de trame (n essais)
+          //timeout...
     //Fct de décision
 
     //Envoi trame d'ordre a processeur
