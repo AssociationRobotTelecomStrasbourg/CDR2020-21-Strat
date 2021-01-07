@@ -29,6 +29,7 @@ uint16_t Vbat_raw;
 
 
 commFrame movt(FRAMESTARTER);
+bool tested;
 
 void setup() {
   // put your setup code here, to run once:
@@ -219,6 +220,9 @@ void setup() {
       #ifdef debug
         Serial.println("Tirette ouverte, match GO!");
       #endif
+      //LEDs indiquant le départ
+      digitalWrite(LED2, HIGH);
+      digitalWrite(LED1, HIGH);
     }
   }
   //Fin code d'attente
@@ -229,19 +233,16 @@ void loop() {
       Serial.println("LOOP!");
       delay(250);
   #endif
-  
-
-
-
- 
-
-
-
   //Code actions du match
+  if(!tested){ //test transmission de consigne
+    tested = true;
+    moveXY(500,500,movt);
+  }
   while(goMatch){
     //actions du match
-    /* digitalWrite(LED2, HIGH);
-    digitalWrite(LED1, HIGH); */
+
+    
+
   }
 }
 
