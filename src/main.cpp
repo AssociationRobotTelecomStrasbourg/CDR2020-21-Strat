@@ -31,6 +31,11 @@ uint16_t Vbat_raw;
 commFrame movt(FRAMESTARTER);
 bool tested;
 
+
+#define matchDuration 100000 //100 * 1000 milliseconds
+bool firstLoop = true;
+uint32_t goTime; //point de départ du compteur de temps écoulé
+
 void setup() {
   // put your setup code here, to run once:
 
@@ -229,20 +234,45 @@ void setup() {
 }
 
 void loop() {
+
   #ifdef debug
       Serial.println("LOOP!");
       delay(250);
   #endif
+
+  //Initialisation valeur de depart du chrono
+  if(firstLoop){
+    
+    goTime = millis();
+    firstLoop = false;
+  }
+
+  //fct d'arret du robot a la fin du match
+  if(millis()-goTime >= matchDuration){
+    goMatch == false;
+    //TODO: arret des moteurs
+  }
+  
   //Code actions du match
   if(!tested){ //test transmission de consigne
     tested = true;
     moveXY(500,500,movt);
   }
-  while(goMatch){
-    //actions du match
 
+  //actions du match
+  while(goMatch){
     
 
+    //Lecture des capteurs
+
+    //Fct de décision
+
+    //Envoi trame d'ordre a processeur
+
+    //Lecture buffer serie strat/mvt
+      //si Ack: OK (acquittement de mvt)
+      //si Err: renvoi de la trame, n essais (Erreur sur trame detectee par movt)
+      //si timeout: renvoi de la trame, n essais (Aucun reponse de movt)
   }
 }
 
