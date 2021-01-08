@@ -120,3 +120,14 @@ uint16_t VL53Network::readMinimumRangeSingleMillimeters(int &sensor_min){
 uint8_t VL53Network::getN_OK(){
     return N_ok;
 }
+
+uint8_t VL53Network::getN(){
+    return N;
+}
+
+void VL53Network::getXSHUT(uint8_t &x1,uint8_t &x2,uint8_t &x3,uint8_t &x4){
+    x1 = xshut_list[0];
+    x2 = xshut_list[1];
+    x3 = xshut_list[2];
+    x4 = xshut_list[3];
+}

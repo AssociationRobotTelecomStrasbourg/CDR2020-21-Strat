@@ -7,6 +7,7 @@ Code de test de la carte-mère du robot pour la CDR2020
 #include "pins_strt.h"
 #include "VL53L0X.h"
 #include "VL53Network.h"
+#include "strat.h"
 
 #include "commFrame.h"
 #include "commKeywords.h"
@@ -36,6 +37,10 @@ bool tested;
 bool firstLoop = true;
 uint32_t goTime; //point de départ du compteur de temps écoulé
 
+/*-------------------------------------*/
+//---------------SETUP-----------------//
+/*-------------------------------------*/
+
 void setup() {
   // put your setup code here, to run once:
 
@@ -45,20 +50,12 @@ void setup() {
   SerialUSB.begin(9600);
 
   //Test Leds de debug
-  pinMode(LED1,OUTPUT);
-  pinMode(LED2,OUTPUT);
-  digitalWrite(LED1,HIGH);
-  digitalWrite(LED2,HIGH);
-  delay(500);
-  digitalWrite(LED1,LOW);
-  digitalWrite(LED2,HIGH);
-  delay(500);
-  digitalWrite(LED1,HIGH);
-  digitalWrite(LED2,LOW);
-  delay(500);
-  digitalWrite(LED1,LOW);
-  digitalWrite(LED2,LOW);
-  
+
+  ledsInit(); //initialisation des LEDs de debug
+
+  //clignotement test des leds
+  ledsBlinkSeq();
+
   pinMode(13,OUTPUT); //built-in led init
   #ifdef debug
     while(!Serial){
@@ -69,6 +66,7 @@ void setup() {
 
   /*Envoi des messages de réveil à MOVT et à IHM*/
   delay(250);//On laisse le temps aux autres de se reveiller
+  //Message de reveil envoyé aux autres microcontrôleurs, qui répondent si message reçu correctement
   Movt.write(0x7E);
   SerialIHM.write(0x7E);
 
@@ -98,19 +96,18 @@ void setup() {
     #endif
   }
 
-  
-
   //Test tension batterie
   pinMode(VBATT,INPUT);
-  Vbat_raw = analogRead(VBATT);
-  Vbat = (map(Vbat_raw,0,1023,0,3.3)*4.0)*1.044; //1.044 : facteur de calibration
+  Vbat = readVbatt(Vbat_raw);
 
   #ifdef debug
     Serial.println(Vbat_raw, DEC);
     Serial.print("Tension batterie : ");
     Serial.print(Vbat);
     Serial.println(" V");
-  #endif 
+  #endif
+
+  //Envoi de la tension batterie, avec division du 16 bits en 2 x 8 bits
   SerialIHM.write(Vbat_raw>>8);
   SerialIHM.write(Vbat_raw & 0x00FF);
   digitalWrite(13,HIGH);
@@ -127,51 +124,47 @@ void setup() {
   
   Wire1.begin();
   //Ecriture de la liste des broches XSHUT
-  u_int8_t* list = new u_int8_t[4];
-  list[0] = XSHUTa;
-  list[1] = XSHUTb;
-  list[2] = XSHUTc;
-  list[3] = XSHUTd;
   //
   //Paramètrage du réseau
-  reseauLidar.setTimeout(500);
-  reseauLidar.set_xshut(list);
-  reseauLidar.initNetwork();
-  reseauLidar.startContinuous(100);
-  N_ok_reseau = reseauLidar.getN_OK(); //Contient le nombre de capteurs initialises avec succes
+  N_ok_reseau = lidarNetworkInit(reseauLidar,DEFAULT_TIMEOUT,100);
   SerialIHM.write(N_ok_reseau); //envoi de l'information à l'IHM
 
   #ifdef debug
+    //Affichage infos du reseau lidar pour debug
+    Serial.print("Nb lidars dans reseau: ");
+    Serial.println(reseauLidar.getN());
+    Serial.print("XSHUTS: ");
+    uint8_t x1,x2,x3,x4;
+    reseauLidar.getXSHUT(x1,x2,x3,x4);
+    Serial.print(x1);
+    Serial.print("|");
+    Serial.print(x2);
+    Serial.print("|");
+    Serial.print(x3);
+    Serial.print("|");
+    Serial.print(x4);
+    Serial.println("|");
     Serial.print("Nb lidars initialisés: ");
     Serial.println(N_ok_reseau);
   #endif
 
   //PWM LIDAR
-  //Essai de plusieurs vitesses de rotation pour le Lidar rotatif
   pinMode(PWM_LIDAR,OUTPUT);
-  analogWrite(PWM_LIDAR,255);
-  delay(700);
-  analogWrite(PWM_LIDAR,125);
-  delay(700);
-  analogWrite(PWM_LIDAR,0);
-  delay(700);
-  analogWrite(PWM_LIDAR,125);
-  delay(700);
-
-
+  //Essai de plusieurs vitesses de rotation pour le Lidar rotatif
+  LidarSpeedTestSequence(); //2100 millisecondes de delai
+  LidarSetSpeed(125);
+  //LIDAR UART
+  SerialLidar.begin(9600);
 
   //UART DEBUG
   Serial4.begin(9600);
-
-  SerialLidar.begin(9600);
 
   #ifdef debug
     Serial.print("Valeur GoSensor: ");
     Serial.println(digitalRead(GO_SENSOR));
   #endif
   
-  digitalWrite(LED1, LOW);
-  digitalWrite(LED2, LOW);
+  ledsWrite(0,0);
 
   #ifdef debug
     Serial.println("Debut attente du match");
@@ -200,11 +193,17 @@ void setup() {
       #endif
     }
 
-    //Si le message correspond à la consigne d'attente, et qu'on attend pas déjà:
-    ////Explication : "Attente" = Attente que la tirette de départ soit tiree par membre de l'équipe
-    if(!attenteGo && msgIHM==0x66){
+    /*
+    Si le message correspond à la consigne d'attente, et qu'on attend pas déjà:
+      Explication : "Attente" = Attente que la tirette de départ soit tiree par membre de l'équipe
+      msgIHM == 0x66 -> equipe a lancé le match via IHM
+    En pratique, l'equipe utilise l'IHM, puis tire sur la tirette
+    */
+
+    if(!attenteGo && msgIHM==0x66){ //Debut attente tirette
       attenteGo = true;
-      digitalWrite(LED1, HIGH);
+      //digitalWrite(LED1, HIGH);
+      ledsWrite(1,0);
       #ifdef debug
         Serial.println("Attente GO!");
       #endif
@@ -221,13 +220,12 @@ void setup() {
       goMatch = true; //Sortie de la boucle d'attente
       SerialIHM.write(0x56); //Confirmation reception à l'IHM
       Movt.write(0x56); //Transmission d'info à movt
-      digitalWrite(LED2, HIGH);
+      ledsWrite(0,1);
       #ifdef debug
         Serial.println("Tirette ouverte, match GO!");
       #endif
-      //LEDs indiquant le départ
-      digitalWrite(LED2, HIGH);
-      digitalWrite(LED1, HIGH);
+      //LEDs indiquent le départ
+      ledsWrite(1,1);
     }
   }
   //Fin code d'attente
@@ -242,18 +240,18 @@ void loop() {
 
   //Initialisation valeur de depart du chrono
   if(firstLoop){
-    
     goTime = millis();
     firstLoop = false;
   }
 
   //fct d'arret du robot a la fin du match
   if(millis()-goTime >= matchDuration){
-    goMatch == false;
+    goMatch = false;
     //TODO: arret des moteurs
   }
   
   //Code actions du match
+    //Temporaire
   if(!tested){ //test transmission de consigne
     tested = true;
     moveXY(500,500,movt);
